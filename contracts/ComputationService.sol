@@ -2,14 +2,18 @@ pragma solidity ^0.4.8;
 import "./usingOraclize.sol";
 
 contract ComputationService is usingOraclize {
-  uint public result;
-  bytes32 public oraclizeID;
+  struct Query {
+    string URL;
+    string JSON;
+  }
+  mapping(uint => Query) public computation;
+  mapping(bytes32 => uint) public result;
+  mapping(bytes32 => address) public requests;
 
   event newOraclizeQuery(string description);
   event newResult(string comp_result);
+  event newOraclizeID(bytes32 ID);
 
-  string URL = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int";
-  string JSON = '{"val1": 4, "val2": 9}';
   // constructor
   function ComputationService() {
     OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
@@ -18,15 +22,33 @@ contract ComputationService is usingOraclize {
   function __callback(bytes32 _oraclizeID, string _result) {
     if (msg.sender != oraclize_cbAddress()) throw;
     newResult(_result);
-    result = parseInt(_result);
+    result[_oraclizeID] = parseInt(_result);
+
+    // TODO: send result to verification contract
   }
 
-  function multiply() payable {
+  function compute(string _val1, string _val2, uint _variable) payable{
+    bytes32 oraclizeID;
+
+    Query memory _query = computation[_variable];
+    _query.JSON = strConcat('\n{"val1": ', _val1, ', "val2": ', _val2, '}');
+
     newOraclizeQuery("Oraclize query was sent, standing by for the answer.");
-    oraclize_query(60, "URL", URL, JSON);
+    oraclizeID = oraclize_query(60, "URL", _query.URL, _query.JSON);
+
+    // store address for specific request
+    requests[oraclizeID] = msg.sender;
+
+    newOraclizeID(oraclizeID);
   }
 
-  function getResult() constant returns (uint) {
-    return result;
+  function register(uint variable) payable {
+    if (variable == 0)
+      Query memory twoInt = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int", "");
+      computation[0] = twoInt;
+  }
+
+  function getResult(bytes32 _oraclizeID) constant returns (uint) {
+    return result[_oraclizeID];
   }
 }
