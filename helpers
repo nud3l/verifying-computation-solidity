@@ -1,0 +1,7 @@
+truffle console
+
+var instance = ComputationService.at('0x4df5cca3aedde5e46dc0efaf0bc694b43ca63776');
+var accounts = web3.eth.accounts;
+web3.eth.defaultAccount = accounts[0];
+
+instance.multiply({from:accounts[0], gas: 400000, value: web3.toWei(1, "ether")})
