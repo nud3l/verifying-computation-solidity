@@ -1,5 +1,6 @@
 pragma solidity ^0.4.8;
 import "./usingOraclize.sol";
+import "./Verification.sol"
 
 contract ComputationService is usingOraclize {
   struct Query {
@@ -8,7 +9,8 @@ contract ComputationService is usingOraclize {
   }
   mapping(uint => Query) public computation;
   mapping(bytes32 => uint) public result;
-  mapping(bytes32 => address) public requests;
+  mapping(bytes32 => address) public request;
+  mapping(address => bool) public verifier;
 
   event newOraclizeQuery(string description);
   event newResult(string comp_result);
@@ -28,6 +30,7 @@ contract ComputationService is usingOraclize {
   }
 
   function compute(string _val1, string _val2, uint _variable) payable{
+    if (!verifier[msg.sender]) throw;
     bytes32 oraclizeID;
 
     Query memory _query = computation[_variable];
@@ -37,15 +40,28 @@ contract ComputationService is usingOraclize {
     oraclizeID = oraclize_query(60, "URL", _query.URL, _query.JSON);
 
     // store address for specific request
-    requests[oraclizeID] = msg.sender;
+    request[oraclizeID] = msg.sender;
 
     newOraclizeID(oraclizeID);
   }
 
-  function register(uint variable) payable {
-    if (variable == 0)
+  function register(uint _variable) payable {
+    if (_variable == 0) {
       Query memory twoInt = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int", "");
       computation[0] = twoInt;
+    }
+  }
+
+  function enableVerifier(address _verification) payable {
+    verifier[_verification] = true;
+    Verification myVerifier = Verification(_verification);
+    myVerifier.enableService();
+  }
+
+  function disableVerifier(address _verification) payable {
+    verifier[_verification] = false;
+    Verification myVerifier = Verification(_verification);
+    myVerifier.disableService();
   }
 
   function getResult(bytes32 _oraclizeID) constant returns (uint) {
