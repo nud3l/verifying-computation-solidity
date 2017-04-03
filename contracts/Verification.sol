@@ -11,22 +11,22 @@ contract Verification {
   mapping(bytes32 => Request) public request;
 
   function enableService() {
-    uint memory index;
+    uint index;
     service.push(msg.sender);
     index = (service.length - 1);
     serviceIndex[msg.sender] = index;
   }
 
   function disableService() {
-    uint memory index;
+    uint index;
     index = serviceIndex[msg.sender];
     delete service[index];
     serviceIndex[msg.sender] = 0;
 
     // update service array and index mapping
     if (index < (service.length - 1)) {
-      uint memory next_index;
-      uint memory this_index;
+      uint next_index;
+      uint this_index;
       this_index = index;
       next_index = this_index + 1;
 
@@ -40,12 +40,13 @@ contract Verification {
     }
   }
 
-  function compute(string _val1, string _val2, uint _variable) payable {
-    address[] memory _computers;
+  function compute(string _val1, string _val2, uint _variable, uint _numVerifiers) payable {
+    address[_numVerifiers] memory _verifiers;
 
-    // could select quorum here
-    for (uint i = 0; i < service.length; i++) {
-      _computers.push(service[i]);
+    if (_numVerifiers > (service.length - 1) throw;
+
+    for (uint i = 0; i < _numVerifiers; i++) {
+      _verifiers[i] = service[i];
     }
 
 
