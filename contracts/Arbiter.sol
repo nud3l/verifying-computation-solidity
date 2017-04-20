@@ -128,7 +128,7 @@ contract Arbiter {
         }
       }
     }
-    
+
     // status 300 + n: 0 + n results are in (i.e 301 := 1 result is in)
     if (requests[_origin].status == 200) {
       requests[_origin].status = 300 + count;
@@ -140,6 +140,24 @@ contract Arbiter {
       // status 400: all results are in
       requests[_origin].status = 400;
     }
+  }
+
+  function compareResults() returns (uint) {
+    if (requests[msg.sender].status != 400) throw;
+
+    for (uint i; i < requests[msg.sender].verifier.length; i++) {
+      if (requests[msg.sender].resultSolver != requests[msg.sender].resultVerifier[i]) {
+          // status 700: solver and validators mismatch
+        requests[msg.sender].status = 700;
+        break;
+      }
+    }
+
+    if (requests[msg.sender].status != 700) {
+      requests[msg.sender].status = 500;
+    }
+
+    return requests[msg.sender].status;
   }
 
   function stringsEqual(string _a, string _b) internal constant returns (bool) {
