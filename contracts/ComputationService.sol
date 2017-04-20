@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 import "./usingOraclize.sol";
-import "./Verification.sol";
+import "./AbstractArbiter.sol";
 
 contract ComputationService is usingOraclize {
   struct Query {
@@ -8,15 +8,15 @@ contract ComputationService is usingOraclize {
     string JSON;
   }
   mapping(uint => Query) public computation;
-  mapping(bytes32 => uint) public result;
+  mapping(bytes32 => string) public result;
   mapping(bytes32 => address) public request;
-  mapping(address => bool) public arbiter;
+  mapping(bytes32 => address) public origin;
+  address public arbiter;
 
   event newOraclizeQuery(string description);
   event newResult(string comp_result);
   event newOraclizeID(bytes32 ID);
 
-  // constructor
   function ComputationService() {
     OAR = OraclizeAddrResolverI(0xafC1A0eDAF76076f2FDEAa968B85E3ef46fad79E);
   }
@@ -24,12 +24,14 @@ contract ComputationService is usingOraclize {
   function __callback(bytes32 _oraclizeID, string _result) {
     if (msg.sender != oraclize_cbAddress()) throw;
     newResult(_result);
-    result[_oraclizeID] = parseInt(_result);
+    result[_oraclizeID] = _result;
 
-    // TODO: send result to verification contract
+    // send result to arbiter contract
+    AbstractArbiter myArbiter = AbstractArbiter(request[_oraclizeID]);
+    myArbiter.receiveResults(_result, origin[_oraclizeID]);
   }
 
-  function compute(string _val1, string _val2, uint _operation) payable{
+  function compute(string _val1, string _val2, uint _operation, address _origin) payable{
     if (!arbiter[msg.sender]) throw;
     bytes32 oraclizeID;
 
@@ -41,6 +43,7 @@ contract ComputationService is usingOraclize {
 
     // store address for specific request
     request[oraclizeID] = msg.sender;
+    origin[oraclizeID] = _origin;
 
     newOraclizeID(oraclizeID);
   }
@@ -54,18 +57,18 @@ contract ComputationService is usingOraclize {
   }
 
   function enableArbiter(address _arbiterAddress) payable {
-    arbiter[_arbiterAddress] = true;
-    Verification myArbiter = Verification(_arbiterAddress);
+    arbiter = _arbiterAddress;
+    AbstractArbiterAbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
     myArbiter.enableService();
   }
 
-  function disableArbiter(address _verification) payable {
-    arbiter[_arbiterAddress] = false;
-    Verification myArbiter = Verification(_arbiterAddress);
+  function disableArbiter(address _arbiterAddress) payable {
+    delete arbiter;
+    AbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
     myArbiter.disableService();
   }
 
-  function getResult(bytes32 _oraclizeID) constant returns (uint) {
+  function getResult(bytes32 _oraclizeID) constant returns (string) {
     return result[_oraclizeID];
   }
 }
