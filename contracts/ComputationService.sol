@@ -10,7 +10,7 @@ contract ComputationService is usingOraclize {
   mapping(uint => Query) public computation;
   mapping(bytes32 => uint) public result;
   mapping(bytes32 => address) public request;
-  mapping(address => bool) public verifier;
+  mapping(address => bool) public arbiter;
 
   event newOraclizeQuery(string description);
   event newResult(string comp_result);
@@ -18,7 +18,7 @@ contract ComputationService is usingOraclize {
 
   // constructor
   function ComputationService() {
-    OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
+    OAR = OraclizeAddrResolverI(0xafC1A0eDAF76076f2FDEAa968B85E3ef46fad79E);
   }
 
   function __callback(bytes32 _oraclizeID, string _result) {
@@ -30,7 +30,7 @@ contract ComputationService is usingOraclize {
   }
 
   function compute(string _val1, string _val2, uint _variable) payable{
-    if (!verifier[msg.sender]) throw;
+    if (!arbiter[msg.sender]) throw;
     bytes32 oraclizeID;
 
     Query memory _query = computation[_variable];
@@ -52,16 +52,16 @@ contract ComputationService is usingOraclize {
     }
   }
 
-  function enableVerifier(address _verification) payable {
-    verifier[_verification] = true;
-    Verification myVerifier = Verification(_verification);
-    myVerifier.enableService();
+  function enableArbiter(address _verification) payable {
+    arbiter[_verification] = true;
+    Verification myArbiter = Verification(_verification);
+    myArbiter.enableService();
   }
 
-  function disableVerifier(address _verification) payable {
-    verifier[_verification] = false;
-    Verification myVerifier = Verification(_verification);
-    myVerifier.disableService();
+  function disableArbiter(address _verification) payable {
+    arbiter[_verification] = false;
+    Verification myArbiter = Verification(_verification);
+    myArbiter.disableService();
   }
 
   function getResult(bytes32 _oraclizeID) constant returns (uint) {

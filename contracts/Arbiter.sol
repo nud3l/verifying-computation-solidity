@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 
-contract Verification {
+contract Arbiter {
   struct Request {
     address requestor;
     uint input1;

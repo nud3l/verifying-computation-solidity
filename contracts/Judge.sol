@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 
-contract Resolver {
+contract Judge {
   struct Request {
     uint input1;
     uint input2;
