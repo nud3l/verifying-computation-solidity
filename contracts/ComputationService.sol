@@ -29,11 +29,11 @@ contract ComputationService is usingOraclize {
     // TODO: send result to verification contract
   }
 
-  function compute(string _val1, string _val2, uint _variable) payable{
+  function compute(string _val1, string _val2, uint _operation) payable{
     if (!arbiter[msg.sender]) throw;
     bytes32 oraclizeID;
 
-    Query memory _query = computation[_variable];
+    Query memory _query = computation[_operation];
     _query.JSON = strConcat('\n{"val1": ', _val1, ', "val2": ', _val2, '}');
 
     newOraclizeQuery("Oraclize query was sent, standing by for the answer.");
@@ -45,22 +45,23 @@ contract ComputationService is usingOraclize {
     newOraclizeID(oraclizeID);
   }
 
-  function register(uint _variable) payable {
-    if (_variable == 0) {
+  function registerOperation(uint _operation) payable {
+    // operation 0: add two integers
+    if (_operation == 0) {
       Query memory twoInt = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int", "");
       computation[0] = twoInt;
     }
   }
 
-  function enableArbiter(address _verification) payable {
-    arbiter[_verification] = true;
-    Verification myArbiter = Verification(_verification);
+  function enableArbiter(address _arbiterAddress) payable {
+    arbiter[_arbiterAddress] = true;
+    Verification myArbiter = Verification(_arbiterAddress);
     myArbiter.enableService();
   }
 
   function disableArbiter(address _verification) payable {
-    arbiter[_verification] = false;
-    Verification myArbiter = Verification(_verification);
+    arbiter[_arbiterAddress] = false;
+    Verification myArbiter = Verification(_arbiterAddress);
     myArbiter.disableService();
   }
 
