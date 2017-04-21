@@ -1,7 +1,7 @@
 pragma solidity ^0.4.8;
 
 contract Judge {
-  function resolveDispute(uint _input1, uint _input2, uint _result, uint8 _operation) returns (bool check) {
+  function resolveDispute(uint _input1, uint _input2, uint _result, uint _operation) returns (bool check) {
     uint check_result;
 
     if (_operation == 0) {
