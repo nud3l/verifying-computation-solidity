@@ -58,7 +58,7 @@ contract ComputationService is usingOraclize {
 
   function enableArbiter(address _arbiterAddress) payable {
     arbiter = _arbiterAddress;
-    AbstractArbiterAbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
+    AbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
     myArbiter.enableService();
   }
 
