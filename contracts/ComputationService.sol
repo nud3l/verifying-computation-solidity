@@ -8,9 +8,19 @@ contract ComputationService is usingOraclize {
     string JSON;
   }
   mapping(uint => Query) public computation;
-  mapping(bytes32 => string) public result;
-  mapping(bytes32 => address) public request;
-  mapping(bytes32 => address) public origin;
+
+  struct Request {
+    string input1;
+    string input2;
+    uint operation;
+    uint256 computationId;
+    string result;
+    address arbiter;
+  }
+
+  mapping(uint256 => bytes32) public requestId;
+  mapping(bytes32 => Request) public requestOraclize;
+
   address public arbiter;
 
   event newOraclizeQuery(string description);
@@ -18,21 +28,24 @@ contract ComputationService is usingOraclize {
   event newOraclizeID(bytes32 ID);
 
   function ComputationService() {
-    OAR = OraclizeAddrResolverI(0xafC1A0eDAF76076f2FDEAa968B85E3ef46fad79E);
+    OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
   }
 
   function __callback(bytes32 _oraclizeID, string _result) {
     if (msg.sender != oraclize_cbAddress()) throw;
     newResult(_result);
-    result[_oraclizeID] = _result;
+
+    Request memory _request = requestOraclize[_oraclizeID];
+    _request.result = _result;
+
+    requestOraclize[_oraclizeID] = _request;
 
     // send result to arbiter contract
-    AbstractArbiter myArbiter = AbstractArbiter(request[_oraclizeID]);
-    myArbiter.receiveResults(_result, origin[_oraclizeID]);
+    AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
+    myArbiter.receiveResults(_result, requestOraclize[_oraclizeID].computationId);
   }
 
-  function compute(string _val1, string _val2, uint _operation, address _origin) payable{
-    if (!arbiter[msg.sender]) throw;
+  function compute(string _val1, string _val2, uint _operation, uint256 _computationId) payable {
     bytes32 oraclizeID;
 
     Query memory _query = computation[_operation];
@@ -42,10 +55,25 @@ contract ComputationService is usingOraclize {
     oraclizeID = oraclize_query(60, "URL", _query.URL, _query.JSON);
 
     // store address for specific request
-    request[oraclizeID] = msg.sender;
-    origin[oraclizeID] = _origin;
+    Request memory _request;
+    _request.input1 = _val1;
+    _request.input2 = _val2;
+    _request.operation = _operation;
+    _request.computationId = _computationId;
+    _request.arbiter = msg.sender;
+
+    requestId[_computationId] = oraclizeID;
+    requestOraclize[oraclizeID] = _request;
 
     newOraclizeID(oraclizeID);
+  }
+
+  function provideIndex(string _resultSolver, uint _computationId) {
+    // this is for two intergers: always returns 0 and 1 for two two intergers
+    Request memory _request = requestOraclize[requestId[_computationId]];
+
+    AbstractArbiter myArbiter = AbstractArbiter(msg.sender);
+    myArbiter.receiveIndex(0, 1, _request.operation, _request.computationId, true);
   }
 
   function registerOperation(uint _operation) payable {
@@ -69,6 +97,6 @@ contract ComputationService is usingOraclize {
   }
 
   function getResult(bytes32 _oraclizeID) constant returns (string) {
-    return result[_oraclizeID];
+    return requestOraclize[_oraclizeID].result;
   }
 }

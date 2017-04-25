@@ -23,6 +23,7 @@ contract Arbiter {
     string input1;
     string input2;
     uint operation;
+    uint256 computationId;
     address solver;
     address[] verifier;
     string resultSolver;
@@ -31,6 +32,7 @@ contract Arbiter {
     bool finished;
   }
   mapping(address => Request) public requests;
+  mapping(uint256 => address) public computation;
 
   address[] public service;
   mapping(address => uint) internal serviceIndex;
@@ -78,6 +80,7 @@ contract Arbiter {
     _request.input1 = _input1;
     _request.input2 = _input2;
     _request.operation = _operation;
+    _request.computationId = rand(0, 2**64);
 
     // select a random solver from the list of computation services
     solver = service[rand(0, service.length)];
@@ -110,28 +113,28 @@ contract Arbiter {
   function executeComputation() payable {
     // send computation request to the solver
     AbstractComputationService mySolver = AbstractComputationService(requests[msg.sender].solver);
-    mySolver.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, msg.sender);
+    mySolver.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
 
     // send computation request to all verifiers
     for (uint i = 0; i < requests[msg.sender].verifier.length; i++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[msg.sender].verifier[i]);
-        myVerifier.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, msg.sender);
+        myVerifier.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
     }
 
     // status 200: request for computations send; awaiting results
     requests[msg.sender].status = 200;
   }
 
-  function receiveResults(string _result, address _origin) {
+  function receiveResults(string _result, uint256 _computationId) {
     uint count = 0;
     // receive results from solvers and verifiers
-    if (msg.sender == requests[_origin].solver) {
-      requests[_origin].resultSolver = _result;
+    if (msg.sender == requests[computation[_computationId]].solver) {
+      requests[computation[_computationId]].resultSolver = _result;
       count = 1;
     } else {
-      for (uint i; i < requests[_origin].verifier.length; i++) {
-        if (msg.sender == requests[_origin].verifier[i]) {
-          requests[_origin].resultVerifier[i] = _result;
+      for (uint i; i < requests[computation[_computationId]].verifier.length; i++) {
+        if (msg.sender == requests[computation[_computationId]].verifier[i]) {
+          requests[computation[_computationId]].resultVerifier[i] = _result;
           count = 1;
           break;
         }
@@ -139,15 +142,15 @@ contract Arbiter {
     }
 
     // status 300 + n: 0 + n results are in (i.e 301 := 1 result is in)
-    if (requests[_origin].status == 200) {
-      requests[_origin].status = 300 + count;
+    if (requests[computation[_computationId]].status == 200) {
+      requests[computation[_computationId]].status = 300 + count;
     } else {
-      requests[_origin].status += count;
+      requests[computation[_computationId]].status += count;
     }
 
-    if ((requests[_origin].status - 300) == (1 + requests[_origin].verifier.length)) {
+    if ((requests[computation[_computationId]].status - 300) == (1 + requests[computation[_computationId]].verifier.length)) {
       // status 400: all results are in
-      requests[_origin].status = 400;
+      requests[computation[_computationId]].status = 400;
     }
   }
 
@@ -177,27 +180,27 @@ contract Arbiter {
     // get all verifiers that disagreed with the solver
     uint[] memory verifierIndex;
     uint count = requests[msg.sender].status - 700;
-    for (uint i = requests[msg.sender].verifier.length; i >= 0; i--) {
-      if (count >= 2**i) {
-        for (uint k = 0; k < verifierIndex.length; k ++) {
+    uint insert;
 
-          verifierIndex.push(i);
-        }
+    for (uint i = requests[msg.sender].verifier.length - 1; i >= 0; i--) {
+      if (count >= 2**i) {
+        insert = verifierIndex.length - 1;
+        verifierIndex[insert] = i;
         count -= 2**i;
       }
     }
 
     // request an index in the result, which is different
-    for (uint j = 0; verifierIndex.length; j++) {
+    for (uint j = 0; j < verifierIndex.length; j++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[msg.sender].verifier[verifierIndex[j]]);
-      myVerifier.provideIndex(requests[msg.sender].resultSolver, msg.sender);
+      myVerifier.provideIndex(requests[msg.sender].resultSolver, requests[msg.sender].computationId);
     }
 
     // status 800: dispute resolution started
     requests[msg.sender].status = 800;
   }
 
-  function receiveIndex(uint _index1, uint _index2, uint _operation, address _origin, bool _end) {
+  function receiveIndex(uint _index1, uint _index2, uint _operation, uint256 _computationId, bool _end) {
     // receives two coordinates
     uint result;
     bool solverCorrect;
@@ -206,15 +209,15 @@ contract Arbiter {
     // this is just an integer check
 
     if (_end) {
-      result = stringToUint(requests[_origin].resultSolver);
+      result = stringToUint(requests[computation[_computationId]].resultSolver);
       Judge myJudge = Judge(judge);
       solverCorrect = myJudge.resolveDispute(_index1, _index2, result, _operation);
       if (solverCorrect) {
         // status 901: dispute resolved; solver correct
-        requests[_origin].status = 901;
+        requests[computation[_computationId]].status = 901;
       } else {
         // status 902: dispute resolved; solver incorrect
-        requests[_origin].status = 902;
+        requests[computation[_computationId]].status = 902;
       }
     }
     // TODO: matrix check
@@ -235,7 +238,7 @@ contract Arbiter {
   function stringsEqual(string _a, string _b) internal constant returns (bool) {
     bytes memory a = bytes(_a);
     bytes memory b = bytes(_b);
-    if (_a.length != _b.length) return false;
+    if (a.length != b.length) return false;
 
     for (uint i = 0; i < a.length; i ++) {
       if (a[i] != b[i]) return false;
