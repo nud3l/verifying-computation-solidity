@@ -1,6 +1,7 @@
 pragma solidity ^0.4.8;
 
 contract AbstractArbiter {
+
   function enableService();
 
   function disableService();
@@ -9,12 +10,18 @@ contract AbstractArbiter {
 
   function executeComputation() payable;
 
-  function receiveResults(string _result, address _origin);
+  function receiveResults(string _result, uint256 _computationId);
 
   function compareResults() returns (uint);
 
   function requestIndex();
 
-  function receiveIndex(uint _index1, uint _index2, uint _operation, address _origin, bool _end);
+  function receiveIndex(uint _index1, uint _index2, uint _operation, uint256 _computationId, bool _end);
+
+  function stringToUint(string s) internal constant returns (uint result);
+
+  function stringsEqual(string _a, string _b) internal constant returns (bool);
+
+  function rand(uint min, uint max) internal constant returns (uint256);
 
 }
