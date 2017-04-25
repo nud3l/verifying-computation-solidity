@@ -17,7 +17,7 @@ contract Arbiter {
   // status 901: dispute resolved; solver correct
   // status 902: dispute resolved; solver incorrect
 
-  address judge;
+  address public judge;
 
   struct Request {
     string input1;
@@ -221,6 +221,10 @@ contract Arbiter {
       }
     }
     // TODO: matrix check
+  }
+
+  function setJudge(address _judge) payable {
+    judge = _judge;
   }
 
   function stringToUint(string s) internal constant returns (uint result) {
