@@ -4,20 +4,40 @@ var Judge = artifacts.require("./Judge.sol");
 var ComputationService = artifacts.require("./ComputationService.sol");
 
 module.exports = function(deployer) {
-  //deployer.deploy(usingOraclize);
-  //deployer.link(ConvertLib, MetaCoin);
-  var contracts = [];
+  var arbiter, judge, computation;
 
-  // deploy one Arbiter
-  contracts.push(Arbiter);
+  deployer.deploy(Arbiter);
+  deployer.deploy(Judge);
 
-  // deploy one Judge
-  contracts.push(Judge);
+  deployer.then(function() {
+    return Judge.deployed();
+  }).then(function(instance) {
+    judge = instance;
+    return Arbiter.deployed();
+  }).then(function(instance) {
+    arbiter = instance;
+    return arbiter.setJudge(judge.address);
+  });
 
   // deploy six computation services
   for (i = 0; i < 6; i++) {
-    contracts.push(ComputationService);
-  }
+    deployer.deploy(ComputationService);
 
-  deployer.deploy(contracts);
+    deployer.then(function() {
+      return ComputationService.deployed();
+    }).then(function(instance) {
+      computation = instance;
+      return computation.registerOperation(0);
+    });
+
+    deployer.then(function() {
+      return Arbiter.deployed();
+    }).then(function(instance) {
+      arbiter = instance;
+      return ComputationService.deployed();
+    }).then(function(instance) {
+      computation = instance;
+      return computation.enableArbiter(arbiter.address);
+    });
+  }
 };
