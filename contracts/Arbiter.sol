@@ -37,6 +37,15 @@ contract Arbiter {
   address[] public service;
   mapping(address => uint) internal serviceIndex;
 
+  event newRequest(uint newRequest);
+  event solverFound(address solverFound);
+  event verifierFound(address verifierFound);
+  event StatusChange(uint status_code);
+
+  // event thisIndex(uint thisIndex);
+  // event step(uint thisStep);
+  // event setLength(uint setLength);
+
   function enableService() {
     uint index;
     service.push(msg.sender);
@@ -67,47 +76,56 @@ contract Arbiter {
   }
 
   function requestComputation(string _input1, string _input2, uint _operation, uint _numVerifiers) {
+    // testEvent("Request computation started");
     address solver;
     address verifier;
     uint count = 0;
     uint check;
+    uint index;
+    uint length = service.length;
+    address[] memory remainingService = new address[](length);
 
     // number of services for potential verifiers minus solver; maximum 6 verifiers
     if (_numVerifiers > (service.length - 1)) throw;
     if (_numVerifiers > 6) throw;
 
-    Request memory _request;
-    _request.input1 = _input1;
-    _request.input2 = _input2;
-    _request.operation = _operation;
-    _request.computationId = rand(0, 2**64);
+    remainingService = service;
+
+    requests[msg.sender].input1 = _input1;
+    requests[msg.sender].input2 = _input2;
+    requests[msg.sender].operation = _operation;
+    requests[msg.sender].computationId = rand(0, 2**64);
+
+    newRequest(requests[msg.sender].computationId);
 
     // select a random solver from the list of computation services
-    solver = service[rand(0, service.length)];
-    _request.solver = solver;
+    index = rand(0, length - 1);
+    solver = remainingService[index];
+    requests[msg.sender].solver = solver;
+    solverFound(solver);
+
+    for (uint i = index; i < length - 1; i++) {
+      remainingService[i] = remainingService[i + 1];
+    }
+    // length-- is a workaround since memory arrays can NOT be resized
+    length--;
 
     // select random verifiers from the list of computation services
-    while (count < _numVerifiers) {
-      check = 0;
-      verifier = service[rand(0, service.length)];
-      if (verifier != solver) {
-        for (uint i; i < count; i++) {
-          if (verifier == _request.verifier[i]) {
-            check = 1;
-            break;
-          }
-        }
-        if (check == 0) {
-          _request.verifier[count] = verifier;
-          count++;
-        }
+    for (uint j = 0; j < _numVerifiers; j++) {
+      index = rand(0, length - 1);
+      verifier = remainingService[index];
+      requests[msg.sender].verifier.push(verifier);
+      verifierFound(verifier);
+
+      for (uint k = index; k < length - 1; k++) {
+        remainingService[k] = remainingService[k + 1];
       }
+      length--;
     }
 
     // status 100: request is created, no solutions are provided
-    _request.status = 100;
-
-    requests[msg.sender] = _request;
+    requests[msg.sender].status = 100;
+    StatusChange(requests[msg.sender].status);
   }
 
   function executeComputation() payable {
@@ -123,6 +141,7 @@ contract Arbiter {
 
     // status 200: request for computations send; awaiting results
     requests[msg.sender].status = 200;
+    StatusChange(requests[msg.sender].status);
   }
 
   function receiveResults(string _result, uint256 _computationId) {
@@ -152,6 +171,8 @@ contract Arbiter {
       // status 400: all results are in
       requests[computation[_computationId]].status = 400;
     }
+
+    StatusChange(requests[computation[_computationId]].status);
   }
 
   function compareResults() returns (uint) {
@@ -174,6 +195,7 @@ contract Arbiter {
     }
 
     return requests[msg.sender].status;
+    StatusChange(requests[msg.sender].status);
   }
 
   function requestIndex() {
@@ -198,6 +220,7 @@ contract Arbiter {
 
     // status 800: dispute resolution started
     requests[msg.sender].status = 800;
+    StatusChange(requests[msg.sender].status);
   }
 
   function receiveIndex(uint _index1, uint _index2, uint _operation, uint256 _computationId, bool _end) {
@@ -220,11 +243,16 @@ contract Arbiter {
         requests[computation[_computationId]].status = 902;
       }
     }
+    StatusChange(requests[computation[_computationId]].status);
     // TODO: matrix check
   }
 
-  function setJudge(address _judge) payable {
+  function setJudge(address _judge) {
     judge = _judge;
+  }
+
+  function getStatus(address _requester) constant returns (uint status) {
+    status = requests[_requester].status;
   }
 
   function stringToUint(string s) internal constant returns (uint result) {
@@ -250,9 +278,9 @@ contract Arbiter {
     return true;
   }
 
-  function rand(uint min, uint max) internal constant returns (uint256){
+  function rand(uint min, uint max) internal constant returns (uint256 random) {
     uint256 blockValue = uint256(block.blockhash(block.number-1));
-    uint256 random = uint256(uint256(blockValue)%(min+max));
+    random = uint256(uint256(blockValue)%(min+max));
     return random;
   }
 }

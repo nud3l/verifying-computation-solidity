@@ -18,7 +18,9 @@ contract AbstractArbiter {
 
   function receiveIndex(uint _index1, uint _index2, uint _operation, uint256 _computationId, bool _end);
 
-  function setJudge(address _judge) payable;
+  function setJudge(address _judge);
+
+  function getStatus() constant returns (uint status);
 
   function stringToUint(string s) internal constant returns (uint result);
 
