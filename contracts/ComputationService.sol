@@ -35,35 +35,31 @@ contract ComputationService is usingOraclize {
     if (msg.sender != oraclize_cbAddress()) throw;
     newResult(_result);
 
-    Request memory _request = requestOraclize[_oraclizeID];
-    _request.result = _result;
+    requestOraclize[_oraclizeID].result = _result;
 
-    requestOraclize[_oraclizeID] = _request;
 
     // send result to arbiter contract
-    AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
-    myArbiter.receiveResults(_result, requestOraclize[_oraclizeID].computationId);
+    /*AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
+    myArbiter.receiveResults(_result, requestOraclize[_oraclizeID].computationId);*/
   }
 
   function compute(string _val1, string _val2, uint _operation, uint256 _computationId) payable {
     bytes32 oraclizeID;
 
-    Query memory _query = computation[_operation];
-    _query.JSON = strConcat('\n{"val1": ', _val1, ', "val2": ', _val2, '}');
+    computation[_operation].JSON = strConcat('\n{"val1": ', _val1, ', "val2": ', _val2, '}');
 
     newOraclizeQuery("Oraclize query was sent, standing by for the answer.");
-    oraclizeID = oraclize_query(60, "URL", _query.URL, _query.JSON);
+
+    oraclizeID = oraclize_query(60, "URL", computation[_operation].URL, computation[_operation].JSON);
 
     // store address for specific request
-    Request memory _request;
-    _request.input1 = _val1;
-    _request.input2 = _val2;
-    _request.operation = _operation;
-    _request.computationId = _computationId;
-    _request.arbiter = msg.sender;
+    requestOraclize[oraclizeID].input1 = _val1;
+    requestOraclize[oraclizeID].input2 = _val2;
+    requestOraclize[oraclizeID].operation = _operation;
+    requestOraclize[oraclizeID].computationId = _computationId;
+    requestOraclize[oraclizeID].arbiter = msg.sender;
 
     requestId[_computationId] = oraclizeID;
-    requestOraclize[oraclizeID] = _request;
 
     newOraclizeID(oraclizeID);
   }
