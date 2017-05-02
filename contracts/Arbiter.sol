@@ -41,6 +41,9 @@ contract Arbiter {
   event solverFound(address solverFound);
   event verifierFound(address verifierFound);
   event StatusChange(uint status_code);
+  event newExecution(uint newExecution);
+  event solverExecution(address solverExecution);
+  event verifierExecution(address verifierExecution);
 
   // event thisIndex(uint thisIndex);
   // event step(uint thisStep);
@@ -129,14 +132,17 @@ contract Arbiter {
   }
 
   function executeComputation() payable {
+    newExecution(requests[msg.sender].computationId);
     // send computation request to the solver
     AbstractComputationService mySolver = AbstractComputationService(requests[msg.sender].solver);
     mySolver.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
+    solverExecution(requests[msg.sender].solver);
 
     // send computation request to all verifiers
     for (uint i = 0; i < requests[msg.sender].verifier.length; i++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[msg.sender].verifier[i]);
-        myVerifier.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
+      myVerifier.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
+      verifierExecution(requests[msg.sender].verifier[i]);
     }
 
     // status 200: request for computations send; awaiting results
