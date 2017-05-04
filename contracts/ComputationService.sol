@@ -77,6 +77,10 @@ contract ComputationService is usingOraclize {
       Query memory twoInt = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int", "");
       computation[0] = twoInt;
     }
+    if (_operation == 1) {
+      Query memory twoIntWrong = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong", "");
+      computation[1] = twoIntWrong;
+    }
   }
 
   function enableArbiter(address _arbiterAddress) payable {
