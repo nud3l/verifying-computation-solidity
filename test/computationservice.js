@@ -1,7 +1,6 @@
 var ComputationService = artifacts.require("ComputationService");
-
 contract('ComputationService', function(accounts) {
-  it("should assert true", function(done) {
+  it("Contract is deployed", function(done) {
     var computation = ComputationService.deployed();
     assert.isTrue(true);
     done();   // stops tests at this point
@@ -28,7 +27,7 @@ contract('ComputationService', function(accounts) {
 
     ComputationService.deployed().then(function(instance) {
       computation = instance;
-      return computation.compute("43543", "423543543", 0, 56347573485346, {from:accounts[0], gas: 4710000, value: web3.toWei(0.01, "ether")});
+      return computation.compute("43543", "423543543", 0, 56347573485346, {from:accounts[0], gas: 500000, value: web3.toWei(0.01, "ether")});
     }).then(function(transaction) {
       for (var i = 0; i < transaction.logs.length; i++) {
         var log = transaction.logs[i];
@@ -37,6 +36,25 @@ contract('ComputationService', function(accounts) {
           assert.isTrue(true);
         }
       }
+      done();
+    });
+  });
+
+  xit("Request computation and send results to Arbiter", function(done) {
+    this.timeout(210000);
+    var computation;
+    var result;
+
+    ComputationService.deployed().then(function(instance) {
+      computation = instance;
+      return computation.compute("43543", "423543543", 0, 56347573485346, {from:accounts[0], gas: 500000, value: web3.toWei(0.01, "ether")});
+    }).then(function(){
+      return new Promise(resolve => setTimeout(resolve, 200000));
+    }).then(function(){
+      return computation.getResult(56347573485346);
+    }).then(function(value){
+      result = value;
+      assert.equal(result, "18442356492849", "The result is wrong (should be 18442356492849)");
       done();
     });
   });

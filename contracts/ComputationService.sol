@@ -37,10 +37,9 @@ contract ComputationService is usingOraclize {
 
     requestOraclize[_oraclizeID].result = _result;
 
-
     // send result to arbiter contract
-    /*AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
-    myArbiter.receiveResults(_result, requestOraclize[_oraclizeID].computationId);*/
+    AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
+    myArbiter.receiveResults.gas(50000)(_result, requestOraclize[_oraclizeID].computationId);
   }
 
   function compute(string _val1, string _val2, uint _operation, uint256 _computationId) payable {
@@ -50,7 +49,7 @@ contract ComputationService is usingOraclize {
 
     newOraclizeQuery("Oraclize query was sent, standing by for the answer.");
 
-    oraclizeID = oraclize_query(60, "URL", computation[_operation].URL, computation[_operation].JSON);
+    oraclizeID = oraclize_query(60, "URL", computation[_operation].URL, computation[_operation].JSON, 350000);
 
     // store address for specific request
     requestOraclize[oraclizeID].input1 = _val1;
@@ -92,7 +91,7 @@ contract ComputationService is usingOraclize {
     myArbiter.disableService();
   }
 
-  function getResult(bytes32 _oraclizeID) constant returns (string) {
-    return requestOraclize[_oraclizeID].result;
+  function getResult(uint _computationId) constant returns (string) {
+    return requestOraclize[requestId[_computationId]].result;
   }
 }

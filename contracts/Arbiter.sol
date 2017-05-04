@@ -23,7 +23,7 @@ contract Arbiter {
     string input1;
     string input2;
     uint operation;
-    uint256 computationId;
+    address user;
     address solver;
     address[] verifier;
     string resultSolver;
@@ -31,8 +31,8 @@ contract Arbiter {
     uint status;
     bool finished;
   }
-  mapping(address => Request) public requests;
-  mapping(uint256 => address) public computation;
+
+  mapping(uint256 => Request) public requests;
 
   address[] public service;
   mapping(address => uint) internal serviceIndex;
@@ -82,6 +82,7 @@ contract Arbiter {
     // testEvent("Request computation started");
     address solver;
     address verifier;
+    uint256 computationId;
     uint count = 0;
     uint check;
     uint index;
@@ -94,17 +95,19 @@ contract Arbiter {
 
     remainingService = service;
 
-    requests[msg.sender].input1 = _input1;
-    requests[msg.sender].input2 = _input2;
-    requests[msg.sender].operation = _operation;
-    requests[msg.sender].computationId = rand(0, 2**64);
+    computationId = rand(0, 2**64);
 
-    newRequest(requests[msg.sender].computationId);
+    requests[computationId].user = _input1;
+    requests[computationId].input1 = _input1;
+    requests[computationId].input2 = _input2;
+    requests[computationId].operation = _operation;
+
+    newRequest(computationId);
 
     // select a random solver from the list of computation services
     index = rand(0, length - 1);
     solver = remainingService[index];
-    requests[msg.sender].solver = solver;
+    requests[computationId].solver = solver;
     solverFound(solver);
 
     for (uint i = index; i < length - 1; i++) {
@@ -117,7 +120,7 @@ contract Arbiter {
     for (uint j = 0; j < _numVerifiers; j++) {
       index = rand(0, length - 1);
       verifier = remainingService[index];
-      requests[msg.sender].verifier.push(verifier);
+      requests[computationId].verifier[j] = verifier;
       verifierFound(verifier);
 
       for (uint k = index; k < length - 1; k++) {
@@ -127,21 +130,21 @@ contract Arbiter {
     }
 
     // status 100: request is created, no solutions are provided
-    requests[msg.sender].status = 100;
-    StatusChange(requests[msg.sender].status);
+    requests[computationId].status = 100;
+    StatusChange(requests[computationId].status);
   }
 
   function executeComputation() payable {
-    newExecution(requests[msg.sender].computationId);
+    newExecution(requests[computationId].computationId);
     // send computation request to the solver
     AbstractComputationService mySolver = AbstractComputationService(requests[msg.sender].solver);
-    mySolver.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
+    mySolver.compute.value(10000000000000000).gas(500000)(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
     solverExecution(requests[msg.sender].solver);
 
     // send computation request to all verifiers
     for (uint i = 0; i < requests[msg.sender].verifier.length; i++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[msg.sender].verifier[i]);
-      myVerifier.compute(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
+      myVerifier.compute.value(10000000000000000).gas(500000)(requests[msg.sender].input1, requests[msg.sender].input2, requests[msg.sender].operation, requests[msg.sender].computationId);
       verifierExecution(requests[msg.sender].verifier[i]);
     }
 
