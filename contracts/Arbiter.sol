@@ -121,7 +121,7 @@ contract Arbiter {
     for (uint j = 0; j < _numVerifiers; j++) {
       index = rand(0, length - 1);
       verifier = remainingService[index];
-      requests[computationId].verifier[j] = verifier;
+      requests[computationId].verifier.push(verifier);
       verifierFound(verifier);
 
       for (uint k = index; k < length - 1; k++) {
