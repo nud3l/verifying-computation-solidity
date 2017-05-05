@@ -27,7 +27,10 @@ module.exports = function(deployer) {
       return ComputationService.deployed();
     }).then(function(instance) {
       computation = instance;
-      return computation.registerOperation(0);
+      // correct: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int"
+      // false: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong"
+      computation.registerOperation(0, "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int");
+      computation.registerOperation(1, "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong");
     });
 
     deployer.then(function() {
