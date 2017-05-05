@@ -71,25 +71,21 @@ contract ComputationService is usingOraclize {
     myArbiter.receiveIndex(0, 1, _request.operation, _request.computationId, true);
   }
 
-  function registerOperation(uint _operation) payable {
+  function registerOperation(uint _operation, string _query) {
     // operation 0: add two integers
     if (_operation == 0) {
-      Query memory twoInt = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int", "");
+      Query memory twoInt = Query(_query, "");
       computation[0] = twoInt;
-    }
-    if (_operation == 1) {
-      Query memory twoIntWrong = Query("https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong", "");
-      computation[1] = twoIntWrong;
     }
   }
 
-  function enableArbiter(address _arbiterAddress) payable {
+  function enableArbiter(address _arbiterAddress) {
     arbiter = _arbiterAddress;
     AbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
     myArbiter.enableService();
   }
 
-  function disableArbiter(address _arbiterAddress) payable {
+  function disableArbiter(address _arbiterAddress) {
     delete arbiter;
     AbstractArbiter myArbiter = AbstractArbiter(_arbiterAddress);
     myArbiter.disableService();

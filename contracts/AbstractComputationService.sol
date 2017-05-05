@@ -7,11 +7,11 @@ contract AbstractComputationService {
 
   function provideIndex(string _resultSolver, uint _computationId);
 
-  function registerOperation(uint _operation) payable;
+  function registerOperation(uint _operation, string _query);
 
-  function enableArbiter(address _arbiterAddress) payable;
+  function enableArbiter(address _arbiterAddress);
 
-  function disableArbiter(address _arbiterAddress) payable;
+  function disableArbiter(address _arbiterAddress);
 
   function getResult(bytes32 _oraclizeID) constant returns (string);
 }
