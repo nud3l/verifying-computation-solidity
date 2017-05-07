@@ -12,7 +12,7 @@ contract AbstractArbiter {
 
   function receiveResults(string _result, uint256 _computationId);
 
-  function compareResults() returns (uint);
+  function compareResults();
 
   function requestIndex();
 
@@ -21,6 +21,8 @@ contract AbstractArbiter {
   function setJudge(address _judge);
 
   function getStatus() constant returns (uint status);
+
+  function getCurrentSolver(address _requester) constant returns (address solver);
 
   function stringToUint(string s) internal constant returns (uint result);
 
