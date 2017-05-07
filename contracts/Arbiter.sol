@@ -90,7 +90,7 @@ contract Arbiter {
     address[] memory remainingService = new address[](length);
 
     // number of services for potential verifiers minus solver; maximum 6 verifiers
-    if (_numVerifiers > (service.length - 1)) throw;
+    if (_numVerifiers > service.length) throw;
     if (_numVerifiers > 6) throw;
 
     remainingService = service;
@@ -141,13 +141,13 @@ contract Arbiter {
     newExecution(computationId);
     // send computation request to the solver
     AbstractComputationService mySolver = AbstractComputationService(requests[computationId].solver);
-    mySolver.compute.value(10000000000000000).gas(500000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
+    mySolver.compute.value(10000000000000000).gas(550000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
     solverExecution(requests[computationId].solver);
 
     // send computation request to all verifiers
     for (uint i = 0; i < requests[computationId].verifier.length; i++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[computationId].verifier[i]);
-      myVerifier.compute.value(10000000000000000).gas(500000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
+      myVerifier.compute.value(10000000000000000).gas(550000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
       verifierExecution(requests[computationId].verifier[i]);
     }
 
@@ -187,7 +187,7 @@ contract Arbiter {
     StatusChange(requests[_computationId].status);
   }
 
-  function compareResults() returns (uint) {
+  function compareResults() {
     uint256 computationId = currentRequest[msg.sender];
 
     if (requests[computationId].status != 400) throw;
@@ -208,7 +208,6 @@ contract Arbiter {
       requests[computationId].status = 700 + count;
     }
 
-    return requests[computationId].status;
     StatusChange(requests[computationId].status);
   }
 
@@ -269,6 +268,10 @@ contract Arbiter {
 
   function getStatus(address _requester) constant returns (uint status) {
     status = requests[currentRequest[_requester]].status;
+  }
+
+  function getCurrentSolver(address _requester) constant returns (address solver) {
+    solver = requests[currentRequest[_requester]].solver;
   }
 
   function stringToUint(string s) internal constant returns (uint result) {

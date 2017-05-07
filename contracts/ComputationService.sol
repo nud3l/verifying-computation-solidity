@@ -39,7 +39,7 @@ contract ComputationService is usingOraclize {
 
     // send result to arbiter contract
     AbstractArbiter myArbiter = AbstractArbiter(requestOraclize[_oraclizeID].arbiter);
-    myArbiter.receiveResults.gas(50000)(_result, requestOraclize[_oraclizeID].computationId);
+    myArbiter.receiveResults.gas(80000)(_result, requestOraclize[_oraclizeID].computationId);
   }
 
   function compute(string _val1, string _val2, uint _operation, uint256 _computationId) payable {
