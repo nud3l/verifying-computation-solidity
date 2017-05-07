@@ -6,7 +6,7 @@ var instance = ComputationService.at(address);
 var accounts = web3.eth.accounts;
 web3.eth.defaultAccount = accounts[0];
 
-comp.register(0,accounts[0],{from:accounts[0], gas: 400000, value: web3.toWei(0.01, "ether")})
+comp.register(0,accounts[0],{from:accounts[0], gas: 400000)
 
 comp.compute("123", "534543", 0, 123432, {from:accounts[0], gas: 400000, value: web3.toWei(0.01, "ether")})
 
@@ -23,3 +23,7 @@ var arbiter = Arbiter.at(add);
 arbiter.requests(accounts[0]);
 arbiter.requestComputation.estimateGas("43543", "423543543", 0, 3);
 arbiter.requestComputation("43543", "423543543", 0, 3, {from:accounts[0], gas: 210000});
+
+
+comp.computation(0);
+comp.registerOperation(0,"https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong",{from:accounts[0], gas: 400000})
