@@ -4,7 +4,7 @@ var Judge = artifacts.require("./Judge.sol");
 var ComputationService = artifacts.require("./ComputationService.sol");
 
 module.exports = function(deployer) {
-  var arbiter, judge, computation;
+  var arbiter, judge, computation, query, counter;
 
   deployer.deploy(Arbiter);
   deployer.deploy(Judge);
@@ -19,18 +19,25 @@ module.exports = function(deployer) {
     return arbiter.setJudge(judge.address);
   });
 
+  counter = 0;
+
   // deploy six computation services
-  for (i = 0; i < 6; i++) {
+  for (i = 0; i < 4; i++) {
     deployer.deploy(ComputationService);
 
     deployer.then(function() {
       return ComputationService.deployed();
     }).then(function(instance) {
       computation = instance;
+      counter += 1;
       // correct: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int"
       // false: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong"
-      computation.registerOperation(0, "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int");
-      computation.registerOperation(1, "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong");
+      if (counter % 2 == 0) {
+        query = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int";
+      } else {
+        query = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong";
+      }
+      computation.registerOperation(0, query);
     });
 
     deployer.then(function() {
