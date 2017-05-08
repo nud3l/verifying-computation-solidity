@@ -38,7 +38,7 @@ module.exports = function(deployer) {
         computation.registerOperation(0, query);
       } else {
         // query = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong";
-        computation.registerOperation(0, query);
+        computation.registerOperation(1, query);
       }
       // computation.registerOperation(0, query);
     });
