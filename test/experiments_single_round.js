@@ -7,15 +7,18 @@ var Arbiter = artifacts.require("Arbiter");
 var ComputationServiceLocally = artifacts.require("ComputationServiceLocally");
 
 var counter = 0;
-var runs = 50;
+var runs = 1000;
 var startTime, endTime;
 
 contract('Experiments', function(accounts) {
-  // it("Send ether to accounts[0]", function (done) {
-  //   for (i = 1; i < 50; i++) {
-  //     web3.eth.sendTransaction({ from: accounts[i], to: accounts[0], value: web3.toWei(95, "ether")}});
-  //   }
-  // });
+  it("Send ether to accounts[0]", function (done) {
+    for (i = 1; i < 51; i++) {
+      web3.eth.sendTransaction({ from: accounts[i], to: accounts[0], value: web3.toWei(95, "ether")});
+    }
+    var balance = web3.fromWei(web3.eth.getBalance(accounts[0]), "ether");
+    assert.isAtLeast(balance, 4500, "Ether not transferred");
+    done();
+  });
 
   for (i = 0; i < runs; i++) {
     it("Select 1 verifier with 50% probability of cheaters", function(done) {
@@ -72,7 +75,7 @@ function verifyComputation(accounts, done, verifier, index, writeCode) {
   }).then(function(thisComputation){
     correct = thisComputation;
     // console.log("The result of the computation is: " + correct);
-    return arbiter.executeComputation({from:accounts[0], gas: 4712388, value: web3.toWei(0.10, "ether")});
+    return arbiter.executeComputation({from:accounts[0], gas: 4712388, value: web3.toWei(0.05, "ether")});
   }).then(function(transaction) {
     gasUsed += transaction.receipt.gasUsed;
     return arbiter.getStatus(accounts[0]);
