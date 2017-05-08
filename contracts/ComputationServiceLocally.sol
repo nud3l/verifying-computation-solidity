@@ -3,7 +3,7 @@ import "./usingOraclize.sol";
 import "./AbstractArbiter.sol";
 
 contract ComputationServiceLocally {
-  bool correctComputation;
+  bool public correctComputation;
 
   struct Request {
     string input1;
@@ -60,8 +60,8 @@ contract ComputationServiceLocally {
     // this is for two intergers: always returns 0 and 1 for two two intergers
     // Request memory _request = requestId[_computationId];
 
-    /*AbstractArbiter myArbiter = AbstractArbiter(msg.sender);
-    myArbiter.receiveIndex(0, 1, 0, _computationId, true);*/
+    AbstractArbiter myArbiter = AbstractArbiter(msg.sender);
+    myArbiter.receiveIndex(0, 1, 0, _computationId, true);
     newIndex(0,1);
   }
 
