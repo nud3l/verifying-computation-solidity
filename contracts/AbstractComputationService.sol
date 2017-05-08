@@ -14,4 +14,10 @@ contract AbstractComputationService {
   function disableArbiter(address _arbiterAddress);
 
   function getResult(bytes32 _oraclizeID) constant returns (string);
+
+  function stringToUint(string s) internal constant returns (uint result);
+
+  function uintToBytes(uint v) constant internal returns (bytes32 ret);
+
+  function bytes32ToString(bytes32 x) constant returns (string);
 }

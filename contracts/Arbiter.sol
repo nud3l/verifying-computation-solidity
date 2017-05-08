@@ -44,6 +44,8 @@ contract Arbiter {
   event newExecution(uint newExecution);
   event solverExecution(address solverExecution);
   event verifierExecution(address verifierExecution);
+  event receivedResult(string receivedResult);
+  event loopTest(uint helper, uint thisValue);
 
   // event thisIndex(uint thisIndex);
   // event step(uint thisStep);
@@ -131,39 +133,46 @@ contract Arbiter {
     }
 
     // status 100: request is created, no solutions are provided
-    requests[computationId].status = 100;
+    updateStatus(100, computationId);
     StatusChange(requests[computationId].status);
   }
 
   function executeComputation() payable {
     uint256 computationId = currentRequest[msg.sender];
+    // status 200: request for computations send; awaiting results
+    // updateStatus(200, computationId);
 
     newExecution(computationId);
     // send computation request to the solver
     AbstractComputationService mySolver = AbstractComputationService(requests[computationId].solver);
-    mySolver.compute.value(10000000000000000).gas(550000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
+    mySolver.compute.value(10000000000000000).gas(500000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
     solverExecution(requests[computationId].solver);
 
     // send computation request to all verifiers
     for (uint i = 0; i < requests[computationId].verifier.length; i++) {
       AbstractComputationService myVerifier = AbstractComputationService(requests[computationId].verifier[i]);
-      myVerifier.compute.value(10000000000000000).gas(550000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
+      myVerifier.compute.value(10000000000000000).gas(500000)(requests[computationId].input1, requests[computationId].input2, requests[computationId].operation, computationId);
       verifierExecution(requests[computationId].verifier[i]);
     }
 
-    // status 200: request for computations send; awaiting results
-    requests[computationId].status = 200;
     StatusChange(requests[computationId].status);
   }
 
   function receiveResults(string _result, uint256 _computationId) {
+    // ONLY FOR LOCAL TESTING
+    if (requests[_computationId].status == 100) {
+      updateStatus(200, _computationId);
+    }
+
+    receivedResult(_result);
+
     uint count = 0;
     // receive results from solvers and verifiers
     if (msg.sender == requests[_computationId].solver) {
       requests[_computationId].resultSolver = _result;
       count = 1;
     } else {
-      for (uint i; i < requests[_computationId].verifier.length; i++) {
+      for (uint i = 0; i < requests[_computationId].verifier.length; i++) {
         if (msg.sender == requests[_computationId].verifier[i]) {
           requests[_computationId].resultVerifier[i] = _result;
           count = 1;
@@ -174,14 +183,14 @@ contract Arbiter {
 
     // status 300 + n: 0 + n results are in (i.e 301 := 1 result is in)
     if (requests[_computationId].status == 200) {
-      requests[_computationId].status = 300 + count;
+      updateStatus((300 + count), _computationId);
     } else {
-      requests[_computationId].status += count;
+      updateStatus((requests[_computationId].status + count), _computationId);
     }
 
     if ((requests[_computationId].status - 300) == (1 + requests[_computationId].verifier.length)) {
       // status 400: all results are in
-      requests[_computationId].status = 400;
+      updateStatus(400, _computationId);
     }
 
     StatusChange(requests[_computationId].status);
@@ -194,7 +203,7 @@ contract Arbiter {
 
     uint count = 0;
 
-    for (uint i; i < requests[computationId].verifier.length; i++) {
+    for (uint i = 0; i < requests[computationId].verifier.length; i++) {
       if (!(stringsEqual(requests[computationId].resultSolver,requests[computationId].resultVerifier[i]))) {
         count += 2**i;
       }
@@ -215,55 +224,69 @@ contract Arbiter {
     uint256 computationId = currentRequest[msg.sender];
 
     // get all verifiers that disagreed with the solver
-    uint[] memory verifierIndex;
+    uint length = requests[computationId].verifier.length;
+    uint[] memory verifierIndex = new uint[](length);
     uint count = requests[computationId].status - 700;
-    uint insert;
+    uint helper = length - 1;
 
-    for (uint i = requests[computationId].verifier.length - 1; i >= 0; i--) {
-      if (count >= 2**i) {
-        insert = verifierIndex.length - 1;
-        verifierIndex[insert] = i;
-        count -= 2**i;
+    for (uint i = 0; i < length; i++) {
+      if (count >= (2**helper)) {
+        verifierIndex[helper] = 1;
+        count -= (2**helper);
       }
-    }
-
-    // request an index in the result, which is different
-    for (uint j = 0; j < verifierIndex.length; j++) {
-      AbstractComputationService myVerifier = AbstractComputationService(requests[computationId].verifier[verifierIndex[j]]);
-      myVerifier.provideIndex(requests[computationId].resultSolver, computationId);
+      helper--;
     }
 
     // status 800: dispute resolution started
     requests[computationId].status = 800;
     StatusChange(requests[computationId].status);
+
+    // request an index in the result, which is different
+    for (uint j = 0; j < length; j++) {
+      if (verifierIndex[j] == 1) {
+        AbstractComputationService myVerifier = AbstractComputationService(requests[computationId].verifier[j]);
+        myVerifier.provideIndex.gas(100000)(requests[computationId].resultSolver, computationId);
+      }
+    }
   }
 
   function receiveIndex(uint _index1, uint _index2, uint _operation, uint256 _computationId, bool _end) {
     // receives two coordinates
     uint result;
     bool solverCorrect;
+    uint input1;
+    uint input2;
+
+    input1 = stringToUint(requests[_computationId].input1);
+    input2 = stringToUint(requests[_computationId].input2);
 
     // check if solver and verifier value differ for given coordinates
     // this is just an integer check
-
-    if (_end) {
-      result = stringToUint(requests[_computationId].resultSolver);
-      Judge myJudge = Judge(judge);
-      solverCorrect = myJudge.resolveDispute(_index1, _index2, result, _operation);
-      if (solverCorrect) {
-        // status 901: dispute resolved; solver correct
-        requests[_computationId].status = 901;
-      } else {
-        // status 902: dispute resolved; solver incorrect
-        requests[_computationId].status = 902;
+    if (requests[_computationId].status < 900) {
+      if (_end) {
+        result = stringToUint(requests[_computationId].resultSolver);
+        Judge myJudge = Judge(judge);
+        solverCorrect = myJudge.resolveDispute(input1, input2, result, _operation);
+        if (solverCorrect) {
+          // status 901: dispute resolved; solver correct
+          requests[_computationId].status = 901;
+        } else {
+          // status 902: dispute resolved; solver incorrect
+          requests[_computationId].status = 902;
+        }
       }
     }
+
     StatusChange(requests[_computationId].status);
     // TODO: matrix check
   }
 
   function setJudge(address _judge) {
     judge = _judge;
+  }
+
+  function updateStatus(uint newStatus, uint computationId) {
+    requests[computationId].status = newStatus;
   }
 
   function getStatus(address _requester) constant returns (uint status) {
