@@ -1,4 +1,4 @@
-var ComputationService = artifacts.require("ComputationService");
+var ComputationService = artifacts.require("ComputationServiceLocally");
 contract('ComputationService', function(accounts) {
   xit("Contract is deployed", function(done) {
     var computation = ComputationService.deployed();

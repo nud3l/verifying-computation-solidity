@@ -91,7 +91,7 @@ contract('Arbiter', function(accounts) {
       status = result;
       assert.equal(status, 200, "Computation execution failed");
     }).then(function(){
-      return new Promise(resolve => setTimeout(resolve, 100000));
+      return new Promise(resolve => setTimeout(resolve, 130000));
     }).then(function(){
       return arbiter.getStatus(accounts[0]);
     }).then(function(received){
