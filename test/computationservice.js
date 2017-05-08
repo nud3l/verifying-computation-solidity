@@ -41,7 +41,6 @@ contract('ComputationService', function(accounts) {
   });
 
   xit("Request computation and send results to Arbiter", function(done) {
-    this.timeout(210000);
     var computation;
     var result;
 
