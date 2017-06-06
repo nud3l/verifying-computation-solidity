@@ -7,7 +7,7 @@ var Arbiter = artifacts.require("Arbiter");
 var ComputationServiceLocally = artifacts.require("ComputationServiceLocally");
 
 var counter = 0;
-var runs = 1000;
+var runs = 311;
 var startTime, endTime;
 
 contract('Experiments', function(accounts) {
@@ -51,7 +51,7 @@ function verifyComputation(accounts, done, verifier, index, writeCode) {
 
   Arbiter.deployed().then(function(instance){
     if ((index == 0) && (writeCode == 0)) {
-      writer.pipe(fs.createWriteStream(('50_percent_cheaters.csv')));
+      writer.pipe(fs.createWriteStream(('70_percent_cheaters.csv')));
     }
     startTime = present();
     gasUsed = 0;

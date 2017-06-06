@@ -29,17 +29,17 @@ module.exports = function(deployer) {
       return ComputationService.deployed();
     }).then(function(instance) {
       computation = instance;
-      counter += 1;
       // correct: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int"
       // false: "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong"
       query = "";
-      if (counter % 2 == 0) {
+      if (counter < 3 ) {
         // query = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/int";
         computation.registerOperation(0, query);
       } else {
         // query = "https://r98ro6hfj5.execute-api.eu-west-1.amazonaws.com/test/multiplicationWrong";
         computation.registerOperation(1, query);
       }
+      counter += 1;
       // computation.registerOperation(0, query);
     });
 

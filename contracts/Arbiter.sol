@@ -9,13 +9,13 @@ contract Arbiter {
   // status 300 + n: 0 + n results are in (i.e 301 := 1 result is in)
   // status 400: all results are in
   // status 500: solver and validators match
-  // status 600: result send to requester
-  // status 700 + n: solver and validators mismatch with n binary encoding of mismatches
-  // e.g. status 729: 700 + 16 + 8 + 4 + 1 => verfier 0, 2, 3, 4 indicated a mismatch
-  // status 800: dispute resolution started
-  // status 801: dispute resolution state 1
-  // status 901: dispute resolved; solver correct
-  // status 902: dispute resolved; solver incorrect
+  // status 600 + n: solver and validators mismatch with n binary encoding of mismatches
+  // e.g. status 629: 600 + 16 + 8 + 4 + 1 => verfier 0, 2, 3, 4 indicated a mismatch
+  // status 700: dispute resolution started
+  // status 701: dispute resolution state 1
+  // status 801: dispute resolved; solver correct
+  // status 802: dispute resolved; solver incorrect
+  // status 900: result send to requester
 
   address public judge;
 
